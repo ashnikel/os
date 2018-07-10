@@ -46,7 +46,7 @@ pub fn spin_sleep_us(us: u64) {
     let start = current_time();
     let end = start as u64 + us;
 
-    if current_time() < end {
+    while current_time() < end {
         unsafe { asm!("nop" :::: "volatile"); }
     }
 }

@@ -19,5 +19,12 @@ pub mod shell;
 
 #[no_mangle]
 pub extern "C" fn kmain() {
-    // FIXME: Start the shell.
+    let mut pin16 = pi::gpio::Gpio::new(16).into_output();
+
+    loop {
+        pin16.set();
+        pi::timer::spin_sleep_ms(1000);
+        pin16.clear();
+        pi::timer::spin_sleep_ms(9000);
+    }
 }
