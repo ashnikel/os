@@ -19,10 +19,9 @@ pub mod shell;
 
 #[no_mangle]
 pub extern "C" fn kmain() {
-    let mut uart = pi::uart::MiniUart::new();
     loop {
-        let byte = uart.read_byte();
-        uart.write_byte(byte);
+        let byte = console::CONSOLE.lock().read_byte();
+        console::kprintln!("You entered: '{}'", byte as char);
     }
 
 }
