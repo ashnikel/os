@@ -88,7 +88,7 @@ impl MiniUart {
     /// Write the byte `byte`. This method blocks until there is space available
     /// in the output FIFO.
     pub fn write_byte(&mut self, byte: u8) {
-        if !self.registers.AUX_MU_LSR_REG
+        while !self.registers.AUX_MU_LSR_REG
             .has_mask(LsrStatus::TxAvailable as u8) { };
         self.registers.AUX_MU_IO_REG.write(byte);
     }
