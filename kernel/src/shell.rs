@@ -36,12 +36,59 @@ impl<'a> Command<'a> {
 
     /// Returns this command's path. This is equivalent to the first argument.
     fn path(&self) -> &str {
-        unimplemented!()
+        self.args[0]
     }
+}
+
+const BS: u8 = 0x08;
+const BEL: u8 = 0x07;
+const LF: u8 = 0x0A;
+const CR: u8 = 0x0D;
+const DEL: u8 = 0x7F;
+
+fn read_line(mut line_vec: StackVec<u8>) -> &str {
+    loop {
+        let byte = CONSOLE.lock().read_byte();
+        match byte {
+            // Printable characters
+            byte @ 0x20 ... 0x7E => {
+                match line_vec.push(byte) {
+                    Ok(()) => kprint!("{}", byte as char),
+                    Err(()) => kprint!("{}", BEL as char),
+                }
+            }
+            BS | DEL => {
+                match line_vec.pop() {
+                    Some(_) => {
+                        kprint!("{}", BS as char);
+                        kprint!(" ");
+                        kprint!("{}", BS as char);
+                    }
+                    None => kprint!("{}", BEL as char),
+                }
+            }
+            CR | LF => {
+                kprintln!();
+                break;
+            }
+            _ => {
+                kprint!("{}", BEL as char);
+            }
+        }
+    }
+
+    ::std::str::from_utf8(line_vec.into_slice()).unwrap()
 }
 
 /// Starts a shell using `prefix` as the prefix for each line. This function
 /// never returns: it is perpetually in a shell loop.
 pub fn shell(prefix: &str) -> ! {
-    unimplemented!()
+    loop {
+        kprint!("{}", prefix);
+        let mut buf = [0u8; 512];
+        let mut line_vec = StackVec::new(&mut buf);
+        let line = read_line(line_vec);
+        kprintln!("You entered '{}'", line);
+    }
 }
+

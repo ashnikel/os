@@ -19,9 +19,5 @@ pub mod shell;
 
 #[no_mangle]
 pub extern "C" fn kmain() {
-    loop {
-        let byte = console::CONSOLE.lock().read_byte();
-        console::kprintln!("You entered: '{}'", byte as char);
-    }
-
+    shell::shell("> ");
 }
