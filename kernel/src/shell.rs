@@ -80,15 +80,31 @@ fn read_line(mut line_vec: StackVec<u8>) -> &str {
     ::std::str::from_utf8(line_vec.into_slice()).unwrap()
 }
 
+const MAXBUF: usize = 512;
+const MAXARGS: usize = 64;
 /// Starts a shell using `prefix` as the prefix for each line. This function
 /// never returns: it is perpetually in a shell loop.
 pub fn shell(prefix: &str) -> ! {
     loop {
         kprint!("{}", prefix);
-        let mut buf = [0u8; 512];
-        let mut line_vec = StackVec::new(&mut buf);
+        let mut buf = [0u8; MAXBUF];
+        let line_vec = StackVec::new(&mut buf);
         let line = read_line(line_vec);
-        kprintln!("You entered '{}'", line);
+        match Command::parse(line, &mut [""; MAXARGS]) {
+            Ok(cmd) => {
+                match cmd.path() {
+                    "echo" => {
+                        for arg in cmd.args.iter().skip(1) {
+                            kprint!("{} ", arg);
+                        }
+                        kprintln!();
+                    }
+                    _ => kprintln!("unknown command: {}", cmd.path()),
+                }
+            }
+            Err(Error::TooManyArgs) => kprintln!("error: too many arguments"),
+            Err(Error::Empty) => { }
+        }
     }
 }
 
