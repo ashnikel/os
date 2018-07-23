@@ -80,8 +80,19 @@ fn read_line(mut line_vec: StackVec<u8>) -> &str {
     ::std::str::from_utf8(line_vec.into_slice()).unwrap()
 }
 
+/// Branches to the address `addr` unconditionally.
+fn jump_to(addr: *mut u8) -> ! {
+    unsafe {
+        asm!("br $0" : : "r"(addr as usize));
+        loop { asm!("nop" :::: "volatile")  }
+    }
+}
+
 const MAXBUF: usize = 512;
 const MAXARGS: usize = 64;
+
+const BOOTLOADER_START_ADDR: usize = 0x4000000;
+const BOOTLOADER_START: *mut u8 = BOOTLOADER_START_ADDR as *mut u8;
 /// Starts a shell using `prefix` as the prefix for each line. This function
 /// never returns: it is perpetually in a shell loop.
 pub fn shell(prefix: &str) -> ! {
@@ -98,6 +109,11 @@ pub fn shell(prefix: &str) -> ! {
                             kprint!("{} ", arg);
                         }
                         kprintln!();
+                    }
+                    "reboot" => {
+                        kprintln!("goodbye!");
+                        kprintln!("press `<ctrl-a>`, `k` to exit");
+                        jump_to(BOOTLOADER_START);
                     }
                     _ => kprintln!("unknown command: {}", cmd.path()),
                 }
