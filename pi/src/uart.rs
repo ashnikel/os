@@ -162,7 +162,7 @@ mod uart_io {
                 Ok(()) => {
                     let mut count = 0;
 
-                    while self.has_byte() {
+                    while self.has_byte() && count < buf.len() {
                         buf[count] = self.read_byte();
                         count += 1;
                     }

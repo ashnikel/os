@@ -26,6 +26,7 @@ fn jump_to(addr: *mut u8) -> ! {
 #[no_mangle]
 pub extern "C" fn kmain() {
     let mut rx_led = pi::gpio::Gpio::new(16).into_output();
+    let mut rx_led_on = true;
     rx_led.set();
 
     let mut uart = pi::uart::MiniUart::new();
@@ -36,6 +37,13 @@ pub extern "C" fn kmain() {
     };
 
     loop {
+        if rx_led_on {
+            rx_led.clear();
+            rx_led_on = false;
+        } else {
+            rx_led.set();
+            rx_led_on = true;
+        }
         match xmodem::Xmodem::receive(&mut uart, &mut buf) {
             Ok(_) => { break; }
             Err(_) => { }
