@@ -115,6 +115,9 @@ pub fn shell(prefix: &str) -> ! {
                         kprintln!("press `<ctrl-a>`, `k` to exit");
                         jump_to(BOOTLOADER_START);
                     }
+                    "panic" => {
+                        panic!("oh dear!");
+                    }
                     _ => kprintln!("unknown command: {}", cmd.path()),
                 }
             }

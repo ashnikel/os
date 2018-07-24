@@ -25,6 +25,7 @@ pub mod fs;
 
 #[cfg(not(test))]
 use allocator::Allocator;
+use console::kprintln;
 use fs::FileSystem;
 
 #[cfg(not(test))]
@@ -36,6 +37,8 @@ pub static FILE_SYSTEM: FileSystem = FileSystem::uninitialized();
 #[no_mangle]
 #[cfg(not(test))]
 pub extern "C" fn kmain() {
+    pi::timer::spin_sleep_ms(1000);
+    kprintln!("Well, hello...");
     // ALLOCATOR.initialize();
     shell::shell("> ");
 }

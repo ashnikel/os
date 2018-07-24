@@ -1,8 +1,23 @@
+use console::kprintln;
+
 #[no_mangle]
 #[cfg(not(test))]
 #[lang = "panic_fmt"]
 pub extern fn panic_fmt(fmt: ::std::fmt::Arguments, file: &'static str, line: u32, col: u32) -> ! {
-    // FIXME: Print `fmt`, `file`, and `line` to the console.
+    kprintln!(" __________");
+    kprintln!("( OH SHI-- )");
+    kprintln!(" ----------");
+    kprintln!("        o   ^__^");
+    kprintln!("         o  (oo)\\_______");
+    kprintln!("            (__)\\       )\\/\\");
+    kprintln!("                ||----w |");
+    kprintln!("                ||     ||");
+    kprintln!();
+    kprintln!("       *** PANIC ***");
+    kprintln!();
+    kprintln!("paniced: {}", fmt);
+    kprintln!("    --> {}:{}:{}", file, line, col);
+
 
     loop { unsafe { asm!("wfe") } }
 }
