@@ -117,3 +117,5 @@ build/
 
 # Submission files
 *.tar.gz
+
+!libsd.a
