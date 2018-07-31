@@ -15,24 +15,59 @@ pub enum Atag {
 impl Atag {
     /// Returns `Some` if this is a `Core` ATAG. Otherwise returns `None`.
     pub fn core(self) -> Option<Core> {
-        unimplemented!()
+        match self {
+            Atag::Core(core) => Some(core),
+            _ => None
+        }
     }
 
     /// Returns `Some` if this is a `Mem` ATAG. Otherwise returns `None`.
     pub fn mem(self) -> Option<Mem> {
-        unimplemented!()
+        match self {
+            Atag::Mem(mem) => Some(mem),
+            _ => None
+        }
     }
 
     /// Returns `Some` with the command line string if this is a `Cmd` ATAG.
     /// Otherwise returns `None`.
     pub fn cmd(self) -> Option<&'static str> {
-        unimplemented!()
+        match self {
+            Atag::Cmd(cmd) => Some(cmd),
+            _ => None
+        }
     }
 }
 
 // FIXME: Implement `From<raw::Core>`, `From<raw::Mem>`, and `From<&raw::Cmd>`
 // for `Atag`. These implementations should be used by the `From<&raw::Atag> for
 // Atag` implementation below.
+
+impl<'a> From<&'a raw::Core> for Atag {
+    fn from(core: &raw::Core) -> Atag {
+        Atag::Core(*core)
+    }
+}
+
+impl<'a> From<&'a raw::Mem> for Atag {
+    fn from(mem: &raw::Mem) -> Atag {
+        Atag::Mem(*mem)
+    }
+}
+#[cfg(feature = "std")]
+impl<'a> From<&'a raw::Cmd> for Atag {
+    fn from(cmd: &raw::Cmd) -> Atag {
+        unsafe {
+            let mut start = cmd as *const u8;
+            let mut end = start;
+            while *end != b'\0' {
+                end = end.add(1);
+            }
+            let len = end as usize - start as usize;
+            Atag::Cmd(std::slice::from_raw_parts(start, len))
+        }
+    }
+}
 
 impl<'a> From<&'a raw::Atag> for Atag {
     fn from(atag: &raw::Atag) -> Atag {
