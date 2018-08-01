@@ -34,10 +34,21 @@ pub static ALLOCATOR: Allocator = Allocator::uninitialized();
 
 pub static FILE_SYSTEM: FileSystem = FileSystem::uninitialized();
 
+pub fn print_atags() {
+    kprintln!("ATAGS:\n");
+    for atag in pi::atags::Atags::get() {
+        kprintln!("{:#?}", atag);
+    }
+    kprintln!();
+}
+
 #[no_mangle]
 #[cfg(not(test))]
 pub extern "C" fn kmain() {
     pi::timer::spin_sleep_ms(1000);
+
+    print_atags();
+
     kprintln!("Well, hello...");
     // ALLOCATOR.initialize();
     shell::shell("> ");

@@ -1,3 +1,5 @@
+use core::{slice, str};
+
 use atags::raw;
 
 pub use atags::raw::{Core, Mem};
@@ -54,17 +56,18 @@ impl<'a> From<&'a raw::Mem> for Atag {
         Atag::Mem(*mem)
     }
 }
-#[cfg(feature = "std")]
+
 impl<'a> From<&'a raw::Cmd> for Atag {
     fn from(cmd: &raw::Cmd) -> Atag {
         unsafe {
-            let mut start = cmd as *const u8;
+            let start = cmd as *const raw::Cmd as *const u8;
             let mut end = start;
             while *end != b'\0' {
                 end = end.add(1);
             }
             let len = end as usize - start as usize;
-            Atag::Cmd(std::slice::from_raw_parts(start, len))
+            let slice = slice::from_raw_parts(start, len);
+            Atag::Cmd(str::from_utf8_unchecked(slice))
         }
     }
 }
@@ -75,11 +78,11 @@ impl<'a> From<&'a raw::Atag> for Atag {
 
         unsafe {
             match (atag.tag, &atag.kind) {
-                (raw::Atag::CORE, &raw::Kind { core }) => unimplemented!(),
-                (raw::Atag::MEM, &raw::Kind { mem }) => unimplemented!(),
-                (raw::Atag::CMDLINE, &raw::Kind { ref cmd }) => unimplemented!(),
-                (raw::Atag::NONE, _) => unimplemented!(),
-                (id, _) => unimplemented!()
+                (raw::Atag::CORE, &raw::Kind { core }) => Atag::from(&core),
+                (raw::Atag::MEM, &raw::Kind { mem }) => Atag::from(&mem),
+                (raw::Atag::CMDLINE, &raw::Kind { ref cmd }) => Atag::from(cmd),
+                (raw::Atag::NONE, _) => Atag::None,
+                (id, _) => Atag::Unknown(id)
             }
         }
     }
