@@ -42,6 +42,16 @@ pub fn print_atags() {
     kprintln!();
 }
 
+pub fn check_alloc() {
+    let mut v = vec![];
+    for i in 0..100 {
+        v.push(i);
+        kprintln!("{:?}", v);
+    }
+    let hello_string = String::from("Hello String!");
+    kprintln!("{}", hello_string);
+}
+
 #[no_mangle]
 #[cfg(not(test))]
 pub extern "C" fn kmain() {
@@ -50,6 +60,9 @@ pub extern "C" fn kmain() {
     print_atags();
 
     kprintln!("Well, hello...");
-    // ALLOCATOR.initialize();
+
+    ALLOCATOR.initialize();
+    check_alloc();
+
     shell::shell("> ");
 }
