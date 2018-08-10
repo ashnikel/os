@@ -119,3 +119,6 @@ build/
 *.tar.gz
 
 !libsd.a
+
+launch.json
+

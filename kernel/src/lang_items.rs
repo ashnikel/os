@@ -1,4 +1,4 @@
-use console::kprintln;
+// use console::kprintln;
 
 #[no_mangle]
 #[cfg(not(test))]

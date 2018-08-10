@@ -9,7 +9,7 @@ mod tests;
 
 use mutex::Mutex;
 use alloc::heap::{Alloc, AllocErr, Layout};
-use std::cmp::max;
+// use std::cmp::max;
 
 /// Thread-safe (locking) wrapper around a particular memory allocator.
 #[derive(Debug)]
