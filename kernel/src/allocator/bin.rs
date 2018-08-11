@@ -207,7 +207,7 @@ impl Allocator {
     /// Parameters not meeting these conditions may result in undefined
     /// behavior.
     pub fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {
-    unsafe {///////////////////////////////////////////
+    unsafe {///////////////////////////////////////////1
         let size = layout.size() + layout.align();
 
         let wtf = ptr as usize;
