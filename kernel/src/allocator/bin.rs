@@ -4,12 +4,11 @@ use alloc::heap::{AllocErr, Layout};
 use allocator::util::*;
 use allocator::linked_list::LinkedList;
 
+use std::cmp::{min, max};
 
-use console::kprintln; ///////////////////////////////////////////////////////////////////////////////////////
-
-const BIN_MIN_SIZE: usize = 3;
-const BIN_MAX_SIZE: usize = 29; // 2^29=512M
-const BINS: usize = BIN_MAX_SIZE + 1;
+const BIN_MIN: usize = 3;
+const BIN_MAX: usize = 29; // 2^29=512M
+const BINS: usize = BIN_MAX + 1;
 
 /// A simple allocator that allocates based on size classes.
 pub struct Allocator {
@@ -46,19 +45,9 @@ impl Allocator {
     }
 
     fn max_bin_fits_in_size(size: usize) -> Option<usize> {
-        for bin in (BIN_MIN_SIZE..BIN_MAX_SIZE).rev() {
+        for bin in (BIN_MIN..BIN_MAX).rev() {
             if size >= bin_size(bin) {
-                kprintln!("*** bin_fits_in_size {} ***", bin);
                 return Some(bin);
-            }
-        }
-        None
-    }
-
-    fn bin_can_hold_size(size: usize) -> Option<usize> {
-        for bin in BIN_MIN_SIZE..BIN_MAX_SIZE {
-            if size <= bin_size(bin) {
-                return Some(bin)
             }
         }
         None
@@ -98,28 +87,24 @@ impl Allocator {
         }
 
         // guarantee that layout can be aligned in bin
-        let size = layout.size() + layout.align();
+        let size = align_up(layout.size().next_power_of_two(),
+                            max(layout.align(), bin_size(BIN_MIN)));
 
-        // size > size of MAX_BIN
-        if let None = Allocator::bin_can_hold_size(size) {
+        let fit_bin = size.trailing_zeros() as usize;
+
+        if size > bin_size(BIN_MAX) {
             return Err(AllocErr::Exhausted { request: layout });
         }
-
-        let fit_bin = Allocator::bin_can_hold_size(size).unwrap();
 
         // fitting bin available
         if !self.bins[fit_bin].is_empty() {
             let addr = self.bins[fit_bin].pop().unwrap();
-            let fuck = addr as usize;
-            let addru8 = addr as *mut u8;
-            let fuck2 = addru8 as usize;
             let aligned_addr = align_up(addr as usize, layout.align());
             return Ok(aligned_addr as *mut u8);
-            // return Ok(addru8);
         }
 
         // fitting bin not available, we nead to split larger bin
-        for bin in fit_bin+1..BIN_MAX_SIZE {
+        for bin in fit_bin+1..BIN_MAX {
             if !self.bins[bin].is_empty() {
                 // bin can be split
                 let mut bin_to_split = bin;
@@ -135,24 +120,19 @@ impl Allocator {
 
         if !self.bins[fit_bin].is_empty() {
             let addr = self.bins[fit_bin].pop().unwrap();
-            let addru8 = addr as *mut u8;
             let aligned_addr = align_up(addr as usize, layout.align());
             return Ok(aligned_addr as *mut u8);
-            // return Ok(addru8);
         } else {
             return Err(AllocErr::Exhausted { request: layout });
         }
     }
 
     fn split_bin(&mut self, bin: usize) {
-        assert!(bin > BIN_MIN_SIZE);
-
+        let addr = self.bins[bin].pop().unwrap();
+        let smaller_bin = bin - 1;
+        let buddy_addr = addr as usize + bin_size(smaller_bin);
         unsafe {
-            let addr = self.bins[bin].pop().unwrap();
-            let smaller_bin = bin - 1;
-            self.bins[smaller_bin].push(addr as *mut usize);//////
-            let buddy_addr = addr as usize + bin_size(smaller_bin);
-
+            self.bins[smaller_bin].push(addr);
             self.bins[smaller_bin].push(buddy_addr as *mut usize);
         }
     }
@@ -176,20 +156,10 @@ impl Allocator {
             }
         }
 
-        unsafe {
-            if merged {
-                    if bin_addr < buddy_addr {
-                        self.bins[bin + 1].push(bin_addr as *mut usize);
-                        return Some(bin_addr);
-                    } else {
-                        self.bins[bin + 1].push(buddy_addr as *mut usize);
-                        return Some(buddy_addr);
-
-                    }
-            } else {
-                self.bins[bin].push(bin_addr as *mut usize);
-                return None;
-            }
+        if merged {
+            return Some(min(bin_addr, buddy_addr));
+        } else {
+            return None;
         }
     }
 
@@ -207,27 +177,28 @@ impl Allocator {
     /// Parameters not meeting these conditions may result in undefined
     /// behavior.
     pub fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {
-    unsafe {///////////////////////////////////////////1
-        let size = layout.size() + layout.align();
+        let size = align_up(layout.size().next_power_of_two(),
+                            max(layout.align(), bin_size(BIN_MIN)));
 
-        let wtf = ptr as usize;
+        let fit_bin = size.trailing_zeros() as usize;
 
-        let fit_bin = Allocator::bin_can_hold_size(size).unwrap();
-
-        let distance_to_start = (ptr as *mut usize) as usize - self.start;
+        let distance_to_start = ptr as usize - self.start;
         let shift_to_bin_start = distance_to_start % bin_size(fit_bin);
         let bin_addr = ptr as usize - shift_to_bin_start;
 
-
         let mut next_addr = bin_addr;
-        for bin in fit_bin..BIN_MAX_SIZE {
+        for bin in fit_bin..BIN_MAX {
             match self.merge_if_buddy_is_empty(bin, next_addr) {
                 Some(addr) => next_addr = addr,
-                None => break,
+                None => {
+                    unsafe {
+                        self.bins[bin].push(next_addr as *mut usize);
+                    }
+                    break;
+                }
             }
         }
     }
-    }///////////////////////////////////////////1
 }
 
 impl fmt::Debug for Allocator {
