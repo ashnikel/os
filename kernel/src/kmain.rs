@@ -26,8 +26,11 @@ pub mod fs;
 
 #[cfg(not(test))]
 use allocator::Allocator;
+use console::kprint;
 use console::kprintln;
+use fat32::traits::BlockDevice;
 use fs::FileSystem;
+use fs::sd::Sd;
 
 #[cfg(not(test))]
 #[global_allocator]
@@ -63,7 +66,24 @@ pub extern "C" fn kmain() {
     kprintln!("Well, hello...");
 
     ALLOCATOR.initialize();
-    check_alloc();
+    // check_alloc();
+
+    // MBR test
+    kprintln!("*** MBR ***");
+    let mut sd = Sd::new().unwrap();
+    let mut buf = [0u8; 512];
+    sd.read_sector(0, &mut buf);
+
+    let mut i = 0;
+    for byte in buf.iter() {
+        if i % 20 == 0 {
+            kprintln!();
+            kprint!("offset {:03X}: ", i);
+        }
+        kprint!("{:02X} ", byte);
+        i += 1;
+    }
+    kprintln!();
 
     shell::shell("> ");
 }

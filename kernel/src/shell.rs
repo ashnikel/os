@@ -110,7 +110,7 @@ pub fn shell(prefix: &str) -> ! {
                         }
                         kprintln!();
                     }
-                    "reboot" => {
+                    "reset" => {
                         kprintln!("goodbye!");
                         kprintln!("press `<ctrl-a>`, `k` to exit");
                         jump_to(BOOTLOADER_START);
