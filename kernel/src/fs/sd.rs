@@ -78,7 +78,7 @@ impl BlockDevice for Sd {
                 format!("invalid buffer size {}, buffer must be at least 512 bytes", buf.len()),
             ));
         }
-        if n > 2 ^ 31 - 1 {
+        if n > 2u64.pow(31) - 1 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 format!("invalid sector number {} (i32 overflow)", n),

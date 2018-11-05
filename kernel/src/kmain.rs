@@ -56,23 +56,11 @@ pub fn check_alloc() {
     kprintln!("{}", hello_string);
 }
 
-#[no_mangle]
-#[cfg(not(test))]
-pub extern "C" fn kmain() {
-    pi::timer::spin_sleep_ms(1000);
-
-    print_atags();
-
-    kprintln!("Well, hello...");
-
-    ALLOCATOR.initialize();
-    // check_alloc();
-
-    // MBR test
+pub fn check_mbr() {
     kprintln!("*** MBR ***");
     let mut sd = Sd::new().unwrap();
     let mut buf = [0u8; 512];
-    sd.read_sector(0, &mut buf);
+    let _read = sd.read_sector(0, &mut buf);
 
     let mut i = 0;
     for byte in buf.iter() {
@@ -84,6 +72,34 @@ pub extern "C" fn kmain() {
         i += 1;
     }
     kprintln!();
+}
+
+pub fn check_root_dir() {
+    use fat32::traits::{Dir, Entry, FileSystem};
+
+    for entry in FILE_SYSTEM.open_dir("/").unwrap().entries().unwrap() {
+        kprintln!("{}", entry.name());
+    }
+}
+
+#[no_mangle]
+#[cfg(not(test))]
+pub extern "C" fn kmain() {
+    pi::timer::spin_sleep_ms(1000);
+
+    print_atags();
+
+    kprintln!("Well, hello...");
+
+    ALLOCATOR.initialize();
+    FILE_SYSTEM.initialize();
+
+    check_root_dir();
+
+    // check_alloc();
+
+    // check_mbr();
+
 
     shell::shell("> ");
 }
