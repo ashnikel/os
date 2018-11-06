@@ -57,7 +57,7 @@ pub fn check_alloc() {
 }
 
 pub fn check_mbr() {
-    kprintln!("*** MBR ***");
+    kprint!("Master Boot Record:");
     let mut sd = Sd::new().unwrap();
     let mut buf = [0u8; 512];
     let _read = sd.read_sector(0, &mut buf);
@@ -77,6 +77,7 @@ pub fn check_mbr() {
 pub fn check_root_dir() {
     use fat32::traits::{Dir, Entry, FileSystem};
 
+    kprintln!("Root directory contents:");
     for entry in FILE_SYSTEM.open_dir("/").unwrap().entries().unwrap() {
         kprintln!("{}", entry.name());
     }
@@ -89,17 +90,13 @@ pub extern "C" fn kmain() {
 
     print_atags();
 
-    kprintln!("Well, hello...");
-
     ALLOCATOR.initialize();
     FILE_SYSTEM.initialize();
 
     check_root_dir();
-
     // check_alloc();
+    check_mbr();
 
-    // check_mbr();
-
-
+    kprintln!("Well, hello...");
     shell::shell("> ");
 }
