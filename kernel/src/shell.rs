@@ -1,6 +1,8 @@
-use stack_vec::StackVec;
-use std::path::PathBuf;
 use console::{kprint, kprintln, CONSOLE};
+use fat32::traits::{Dir, Entry, FileSystem};
+use FILE_SYSTEM;
+use stack_vec::StackVec;
+use std::path::{Component, Path, PathBuf};
 
 /// Error type for `Command` parse failures.
 #[derive(Debug)]
@@ -60,7 +62,7 @@ impl<'a> Command<'a> {
 
 pub fn cmd_cd(args: &[&str], cwd: &mut PathBuf) {
     if args.len() == 0 {
-        kprintln!("cd /");
+        cwd.push(PathBuf::from("/"));
         return;
     }
     if args.len() > 1 {
@@ -68,14 +70,31 @@ pub fn cmd_cd(args: &[&str], cwd: &mut PathBuf) {
         return;
     }
     match args[0] {
-        "." => {}, // nothing to do
-        ".." => {
-            if cwd != PathBuf::from("/") {
-                cwd.pop();
+        "." => {},
+        ".." => { cwd.pop(); },
+        path => {
+            let mut new_cwd = cwd.clone();
+            new_cwd.push(path);
+            let norm = path_normalize(&new_cwd);
+            if let Err(_) = FILE_SYSTEM.open_dir(&norm) {
+                kprintln!("cd: no such directory");
+                return;
             }
+            cwd.push(norm);
         }
-        _ => unimplemented!()
     }
+}
+
+pub fn path_normalize(path: &PathBuf) -> PathBuf {
+    let mut norm = PathBuf::new();
+    for component in path.components() {
+        match component {
+            Component::RootDir | Component::Normal(_) => norm.push(component.as_os_str()),
+            Component::ParentDir => {norm.pop();},
+            _ => {}
+        }
+    }
+    norm
 }
 
 pub fn cmd_echo(args: &[&str]) {
@@ -166,3 +185,16 @@ pub fn shell(prefix: &str) -> ! {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn check_path_normalize() {
+        let path = PathBuf::from("/1/2/../3/./4/../../5/");
+        assert_eq!(PathBuf::from("/1/5"), path_normalize(&path));
+
+        let path = PathBuf::from("/../../.././.");
+        assert_eq!(PathBuf::from("/"), path_normalize(&path));
+    }
+}
