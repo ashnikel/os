@@ -88,14 +88,14 @@ pub fn check_root_dir() {
 pub extern "C" fn kmain() {
     pi::timer::spin_sleep_ms(1000);
 
-    print_atags();
+    // print_atags();
 
     ALLOCATOR.initialize();
     FILE_SYSTEM.initialize();
 
-    check_root_dir();
+    // check_root_dir();
     // check_alloc();
-    check_mbr();
+    // check_mbr();
 
     kprintln!("Well, hello...");
     shell::shell("> ");

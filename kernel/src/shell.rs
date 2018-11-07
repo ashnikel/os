@@ -1,4 +1,5 @@
 use stack_vec::StackVec;
+use std::path::PathBuf;
 use console::{kprint, kprintln, CONSOLE};
 
 /// Error type for `Command` parse failures.
@@ -38,6 +39,58 @@ impl<'a> Command<'a> {
     fn path(&self) -> &str {
         self.args[0]
     }
+
+    fn exec(&self, cwd: &mut PathBuf) {
+        match self.path() {
+                    "cd" => cmd_cd(&self.args[1..], cwd),
+                    "echo" => cmd_echo(&self.args[1..]),
+                    "pwd" =>  cmd_pwd(&self.args[1..], cwd),
+                    "reset" => {
+                        kprintln!("goodbye!");
+                        kprintln!("press `<ctrl-a>`, `k` to exit");
+                        jump_to(BOOTLOADER_START);
+                    }
+                    "panic" => {
+                        panic!("oh dear!");
+                    }
+                    _ => kprintln!("unknown command: {}", self.path()),
+        }
+    }
+}
+
+pub fn cmd_cd(args: &[&str], cwd: &mut PathBuf) {
+    if args.len() == 0 {
+        kprintln!("cd /");
+        return;
+    }
+    if args.len() > 1 {
+        kprintln!("cd: too many arguments");
+        return;
+    }
+    match args[0] {
+        "." => {}, // nothing to do
+        ".." => {
+            if cwd != PathBuf::from("/") {
+                cwd.pop();
+            }
+        }
+        _ => unimplemented!()
+    }
+}
+
+pub fn cmd_echo(args: &[&str]) {
+    for arg in args.iter() {
+        kprint!("{} ", arg);
+    }
+    kprintln!();
+}
+
+pub fn cmd_pwd(args: &[&str], cwd: &PathBuf) {
+    if args.len() > 0 {
+        kprintln!("pwd: too many arguments");
+        return;
+    }
+    kprintln!("{}", cwd.display());
 }
 
 const BS: u8 = 0x08;
@@ -96,30 +149,16 @@ const BOOTLOADER_START: *mut u8 = BOOTLOADER_START_ADDR as *mut u8;
 /// Starts a shell using `prefix` as the prefix for each line. This function
 /// never returns: it is perpetually in a shell loop.
 pub fn shell(prefix: &str) -> ! {
+    let mut cwd = PathBuf::from("/");
+
     loop {
-        kprint!("{}", prefix);
+        kprint!("{}{}", cwd.display(), prefix);
         let mut buf = [0u8; MAXBUF];
         let line_vec = StackVec::new(&mut buf);
         let line = read_line(line_vec);
         match Command::parse(line, &mut [""; MAXARGS]) {
             Ok(cmd) => {
-                match cmd.path() {
-                    "echo" => {
-                        for arg in cmd.args.iter().skip(1) {
-                            kprint!("{} ", arg);
-                        }
-                        kprintln!();
-                    }
-                    "reset" => {
-                        kprintln!("goodbye!");
-                        kprintln!("press `<ctrl-a>`, `k` to exit");
-                        jump_to(BOOTLOADER_START);
-                    }
-                    "panic" => {
-                        panic!("oh dear!");
-                    }
-                    _ => kprintln!("unknown command: {}", cmd.path()),
-                }
+                cmd.exec(&mut cwd);
             }
             Err(Error::TooManyArgs) => kprintln!("error: too many arguments"),
             Err(Error::Empty) => { }
