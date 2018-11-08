@@ -2,6 +2,8 @@ use console::{kprint, kprintln, CONSOLE};
 use fat32::traits::{Dir, Entry, File, FileSystem, Metadata, Timestamp};
 use FILE_SYSTEM;
 use stack_vec::StackVec;
+use std::io::Read;
+use std::str;
 use std::path::{Component, PathBuf};
 
 /// Error type for `Command` parse failures.
@@ -44,6 +46,7 @@ impl<'a> Command<'a> {
 
     fn exec(&self, cwd: &mut PathBuf) {
         match self.path() {
+                    "cat" => cmd_cat(&self.args[1..], cwd),
                     "cd" => cmd_cd(&self.args[1..], cwd),
                     "echo" => cmd_echo(&self.args[1..]),
                     "ls" => cmd_ls(&self.args[1..], cwd),
@@ -59,6 +62,42 @@ impl<'a> Command<'a> {
                     _ => kprintln!("unknown command: {}", self.path()),
         }
     }
+}
+
+pub fn cmd_cat(args: &[&str], cwd: &PathBuf) {
+    if args.len() == 0 {
+        kprintln!("usage: cat [file1]...");
+        return;
+    }
+    for arg in args {
+        let mut dir = cwd.clone();
+        dir.push(arg);
+        if let Ok(mut file) = FILE_SYSTEM.open_file(&dir) {
+            loop {
+                let mut buf = [0u8; 512];
+                match file.read(&mut buf) {
+                    Ok(0) => break,
+                    Ok(_) => {
+                        match str::from_utf8(&buf) {
+                            Ok(s) => kprint!("{}", s),
+                            Err(e) => {
+                                kprint!("UTF-8 error: {}", e);
+                                break;
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        kprint!("failed to read: {:?}", e);
+                        break;
+                    }
+                }
+
+            }
+        } else {
+            kprint!("cat: no such file: {}", dir.display());
+        }
+    }
+    kprintln!();
 }
 
 pub fn cmd_cd(args: &[&str], cwd: &mut PathBuf) {
