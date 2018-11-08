@@ -1,8 +1,8 @@
 use console::{kprint, kprintln, CONSOLE};
-use fat32::traits::{Dir, Entry, FileSystem};
+use fat32::traits::{Dir, Entry, File, FileSystem, Metadata, Timestamp};
 use FILE_SYSTEM;
 use stack_vec::StackVec;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Component, PathBuf};
 
 /// Error type for `Command` parse failures.
 #[derive(Debug)]
@@ -46,6 +46,7 @@ impl<'a> Command<'a> {
         match self.path() {
                     "cd" => cmd_cd(&self.args[1..], cwd),
                     "echo" => cmd_echo(&self.args[1..]),
+                    "ls" => cmd_ls(&self.args[1..], cwd),
                     "pwd" =>  cmd_pwd(&self.args[1..], cwd),
                     "reset" => {
                         kprintln!("goodbye!");
@@ -85,6 +86,92 @@ pub fn cmd_cd(args: &[&str], cwd: &mut PathBuf) {
     }
 }
 
+pub fn cmd_echo(args: &[&str]) {
+    for arg in args.iter() {
+        kprint!("{} ", arg);
+    }
+    kprintln!();
+}
+
+pub fn cmd_ls(args:&[&str], cwd: &PathBuf) {
+    let mut show_hidden = false;
+    let mut directory: PathBuf = cwd.clone();
+
+    match args.len() {
+        0 => {}
+        1 => {
+            if args[0] == "-a" {
+                show_hidden = true;
+            } else {
+                directory.push(args[0]);
+            }
+        }
+        2 => {
+            if args[0] == "-a" {
+                show_hidden = true;
+            }
+            else {
+                kprintln!("usage: ls [-a] [directory]");
+                return;
+            }
+            directory.push(args[1]);
+        }
+        _ => {
+            kprintln!("ls: too many arguments");
+            return;
+        }
+    }
+
+    if let Ok(entries) = FILE_SYSTEM.open_dir(path_normalize(&directory)) {
+        for entry in entries.entries().unwrap() {
+            let meta = entry.metadata();
+            let mut name = entry.name().to_string();
+
+            if !show_hidden && name.starts_with('.') {
+                continue;
+            }
+            if meta.volume_id() {
+                continue; // do not show volume ID entry
+            }
+
+            let is_hidden = if name.starts_with('.') { 'h' } else { '-' };
+            let is_dir = if entry.is_dir() { 'd' } else { '-' };
+            let is_read_only = if meta.read_only() { 'r' } else { 'w' };
+
+            let size = if entry.is_file() {
+                entry.as_file().unwrap().size()
+            } else {
+                0
+            };
+            if entry.is_dir() {
+                name.push('/');
+            }
+            kprintln!("{}{}{} {:02}.{:02}.{} {:02}:{:02} {:10} {}",
+                is_dir,
+                is_hidden,
+                is_read_only,
+                meta.modified().day(),
+                meta.modified().month(),
+                meta.modified().year(),
+                meta.modified().hour(),
+                meta.modified().minute(),
+                size,
+                name
+            );
+        }
+    } else {
+        kprintln!("ls: no such directory: {}", directory.display());
+    }
+}
+
+pub fn cmd_pwd(args: &[&str], cwd: &PathBuf) {
+    if args.len() > 0 {
+        kprintln!("pwd: too many arguments");
+        return;
+    }
+    kprintln!("{}", cwd.display());
+}
+
 pub fn path_normalize(path: &PathBuf) -> PathBuf {
     let mut norm = PathBuf::new();
     for component in path.components() {
@@ -95,21 +182,6 @@ pub fn path_normalize(path: &PathBuf) -> PathBuf {
         }
     }
     norm
-}
-
-pub fn cmd_echo(args: &[&str]) {
-    for arg in args.iter() {
-        kprint!("{} ", arg);
-    }
-    kprintln!();
-}
-
-pub fn cmd_pwd(args: &[&str], cwd: &PathBuf) {
-    if args.len() > 0 {
-        kprintln!("pwd: too many arguments");
-        return;
-    }
-    kprintln!("{}", cwd.display());
 }
 
 const BS: u8 = 0x08;
@@ -171,7 +243,7 @@ pub fn shell(prefix: &str) -> ! {
     let mut cwd = PathBuf::from("/");
 
     loop {
-        kprint!("{}{}", cwd.display(), prefix);
+        kprint!("({}) {}", cwd.display(), prefix);
         let mut buf = [0u8; MAXBUF];
         let line_vec = StackVec::new(&mut buf);
         let line = read_line(line_vec);
