@@ -1,5 +1,5 @@
-use std::io;
 use std::fmt;
+use std::io;
 
 use pi::uart::MiniUart;
 
@@ -7,7 +7,7 @@ use mutex::Mutex;
 
 /// A global singleton allowing read/write access to the console.
 pub struct Console {
-    inner: Option<MiniUart>
+    inner: Option<MiniUart>,
 }
 
 impl Console {
@@ -78,7 +78,9 @@ pub fn _print(args: fmt::Arguments) {
     }
 
     #[cfg(test)]
-    { print!("{}", args); }
+    {
+        print!("{}", args);
+    }
 }
 
 /// Like `println!`, but for kernel-space.

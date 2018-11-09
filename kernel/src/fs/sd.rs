@@ -1,5 +1,5 @@
-use std::io;
 use fat32::traits::BlockDevice;
+use std::io;
 
 extern "C" {
     /// A global representing the last SD controller error that occured.
@@ -46,9 +46,7 @@ pub struct Sd;
 impl Sd {
     /// Initializes the SD card controller and returns a handle to it.
     pub fn new() -> Result<Sd, Error> {
-        let init_result = unsafe {
-            sd_init()
-        };
+        let init_result = unsafe { sd_init() };
         match init_result {
             0 => Ok(Sd),
             -1 => Err(Error::Timeout),
@@ -75,7 +73,10 @@ impl BlockDevice for Sd {
         if buf.len() < 512 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                format!("invalid buffer size {}, buffer must be at least 512 bytes", buf.len()),
+                format!(
+                    "invalid buffer size {}, buffer must be at least 512 bytes",
+                    buf.len()
+                ),
             ));
         }
         if n > 2u64.pow(31) - 1 {

@@ -6,7 +6,7 @@ pub enum Fault {
     Permission,
     Alignment,
     TlbConflict,
-    Other(u8)
+    Other(u8),
 }
 
 impl From<u32> for Fault {
@@ -30,15 +30,9 @@ pub enum Syndrome {
     Hvc(u16),
     Smc(u16),
     MsrMrsSystem,
-    InstructionAbort {
-        kind: Fault,
-        level: u8,
-    },
+    InstructionAbort { kind: Fault, level: u8 },
     PCAlignmentFault,
-    DataAbort {
-        kind: Fault,
-        level: u8
-    },
+    DataAbort { kind: Fault, level: u8 },
     SpAlignmentFault,
     TrappedFpu,
     SError,
@@ -46,7 +40,7 @@ pub enum Syndrome {
     Step,
     Watchpoint,
     Brk(u16),
-    Other(u32)
+    Other(u32),
 }
 
 /// Converts a raw syndrome value (ESR) into a `Syndrome` (ref: D1.10.4).

@@ -1,21 +1,21 @@
 use console::{kprint, kprintln, CONSOLE};
 use fat32::traits::{Dir, Entry, File, FileSystem, Metadata, Timestamp};
-use FILE_SYSTEM;
 use stack_vec::StackVec;
 use std::io::Read;
-use std::str;
 use std::path::{Component, PathBuf};
+use std::str;
+use FILE_SYSTEM;
 
 /// Error type for `Command` parse failures.
 #[derive(Debug)]
 enum Error {
     Empty,
-    TooManyArgs
+    TooManyArgs,
 }
 
 /// A structure representing a single shell command.
 struct Command<'a> {
-    args: StackVec<'a, &'a str>
+    args: StackVec<'a, &'a str>,
 }
 
 impl<'a> Command<'a> {
@@ -46,20 +46,20 @@ impl<'a> Command<'a> {
 
     fn exec(&self, cwd: &mut PathBuf) {
         match self.path() {
-                    "cat" => cmd_cat(&self.args[1..], cwd),
-                    "cd" => cmd_cd(&self.args[1..], cwd),
-                    "echo" => cmd_echo(&self.args[1..]),
-                    "ls" => cmd_ls(&self.args[1..], cwd),
-                    "pwd" =>  cmd_pwd(&self.args[1..], cwd),
-                    "reset" => {
-                        kprintln!("goodbye!");
-                        kprintln!("press `<ctrl-a>`, `k` to exit");
-                        jump_to(BOOTLOADER_START);
-                    }
-                    "panic" => {
-                        panic!("oh dear!");
-                    }
-                    _ => kprintln!("unknown command: {}", self.path()),
+            "cat" => cmd_cat(&self.args[1..], cwd),
+            "cd" => cmd_cd(&self.args[1..], cwd),
+            "echo" => cmd_echo(&self.args[1..]),
+            "ls" => cmd_ls(&self.args[1..], cwd),
+            "pwd" => cmd_pwd(&self.args[1..], cwd),
+            "reset" => {
+                kprintln!("goodbye!");
+                kprintln!("press `<ctrl-a>`, `k` to exit");
+                jump_to(BOOTLOADER_START);
+            }
+            "panic" => {
+                panic!("oh dear!");
+            }
+            _ => kprintln!("unknown command: {}", self.path()),
         }
     }
 }
@@ -77,21 +77,18 @@ pub fn cmd_cat(args: &[&str], cwd: &PathBuf) {
                 let mut buf = [0u8; 512];
                 match file.read(&mut buf) {
                     Ok(0) => break,
-                    Ok(_) => {
-                        match str::from_utf8(&buf) {
-                            Ok(s) => kprint!("{}", s),
-                            Err(e) => {
-                                kprint!("UTF-8 error: {}", e);
-                                break;
-                            }
+                    Ok(_) => match str::from_utf8(&buf) {
+                        Ok(s) => kprint!("{}", s),
+                        Err(e) => {
+                            kprint!("UTF-8 error: {}", e);
+                            break;
                         }
-                    }
+                    },
                     Err(e) => {
                         kprint!("failed to read: {:?}", e);
                         break;
                     }
                 }
-
             }
         } else {
             kprint!("cat: no such file: {}", dir.display());
@@ -110,8 +107,10 @@ pub fn cmd_cd(args: &[&str], cwd: &mut PathBuf) {
         return;
     }
     match args[0] {
-        "." => {},
-        ".." => { cwd.pop(); },
+        "." => {}
+        ".." => {
+            cwd.pop();
+        }
         path => {
             let mut new_cwd = cwd.clone();
             new_cwd.push(path);
@@ -132,7 +131,7 @@ pub fn cmd_echo(args: &[&str]) {
     kprintln!();
 }
 
-pub fn cmd_ls(args:&[&str], cwd: &PathBuf) {
+pub fn cmd_ls(args: &[&str], cwd: &PathBuf) {
     let mut show_hidden = false;
     let mut directory: PathBuf = cwd.clone();
 
@@ -148,8 +147,7 @@ pub fn cmd_ls(args:&[&str], cwd: &PathBuf) {
         2 => {
             if args[0] == "-a" {
                 show_hidden = true;
-            }
-            else {
+            } else {
                 kprintln!("usage: ls [-a] [directory]");
                 return;
             }
@@ -185,7 +183,8 @@ pub fn cmd_ls(args:&[&str], cwd: &PathBuf) {
             if entry.is_dir() {
                 name.push('/');
             }
-            kprintln!("{}{}{} {:02}.{:02}.{} {:02}:{:02} {:10} {}",
+            kprintln!(
+                "{}{}{} {:02}.{:02}.{} {:02}:{:02} {:10} {}",
                 is_dir,
                 is_hidden,
                 is_read_only,
@@ -216,7 +215,9 @@ pub fn path_normalize(path: &PathBuf) -> PathBuf {
     for component in path.components() {
         match component {
             Component::RootDir | Component::Normal(_) => norm.push(component.as_os_str()),
-            Component::ParentDir => {norm.pop();},
+            Component::ParentDir => {
+                norm.pop();
+            }
             _ => {}
         }
     }
@@ -234,22 +235,18 @@ fn read_line(mut line_vec: StackVec<u8>) -> &str {
         let byte = CONSOLE.lock().read_byte();
         match byte {
             // Printable characters
-            byte @ 0x20 ... 0x7E => {
-                match line_vec.push(byte) {
-                    Ok(()) => kprint!("{}", byte as char),
-                    Err(()) => kprint!("{}", BEL as char),
+            byte @ 0x20...0x7E => match line_vec.push(byte) {
+                Ok(()) => kprint!("{}", byte as char),
+                Err(()) => kprint!("{}", BEL as char),
+            },
+            BS | DEL => match line_vec.pop() {
+                Some(_) => {
+                    kprint!("{}", BS as char);
+                    kprint!(" ");
+                    kprint!("{}", BS as char);
                 }
-            }
-            BS | DEL => {
-                match line_vec.pop() {
-                    Some(_) => {
-                        kprint!("{}", BS as char);
-                        kprint!(" ");
-                        kprint!("{}", BS as char);
-                    }
-                    None => kprint!("{}", BEL as char),
-                }
-            }
+                None => kprint!("{}", BEL as char),
+            },
             CR | LF => {
                 kprintln!();
                 break;
@@ -267,7 +264,9 @@ fn read_line(mut line_vec: StackVec<u8>) -> &str {
 fn jump_to(addr: *mut u8) -> ! {
     unsafe {
         asm!("br $0" : : "r"(addr as usize));
-        loop { asm!("nop" :::: "volatile")  }
+        loop {
+            asm!("nop" :::: "volatile")
+        }
     }
 }
 
@@ -291,7 +290,7 @@ pub fn shell(prefix: &str) -> ! {
                 cmd.exec(&mut cwd);
             }
             Err(Error::TooManyArgs) => kprintln!("error: too many arguments"),
-            Err(Error::Empty) => { }
+            Err(Error::Empty) => {}
         }
     }
 }

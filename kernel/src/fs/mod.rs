@@ -3,11 +3,11 @@ pub mod sd;
 use std::io;
 use std::path::Path;
 
-use fat32::vfat::{self, Shared, VFat};
 pub use fat32::traits;
+use fat32::vfat::{self, Shared, VFat};
 
-use mutex::Mutex;
 use self::sd::Sd;
+use mutex::Mutex;
 
 pub struct FileSystem(Mutex<Option<Shared<VFat>>>);
 

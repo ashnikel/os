@@ -1,5 +1,5 @@
 mod align_util {
-    use allocator::util::{align_up, align_down};
+    use allocator::util::{align_down, align_up};
 
     #[test]
     fn test_align_down() {
@@ -48,16 +48,34 @@ mod align_util {
         assert_eq!(align_up(0xABCDAB, 1 << 16), 0xAC0000);
     }
 
-    #[test] #[should_panic] fn test_panics_1() { align_down(0xFFFF0000, 7); }
-    #[test] #[should_panic] fn test_panics_2() { align_down(0xFFFF0000, 123); }
-    #[test] #[should_panic] fn test_panics_3() { align_up(0xFFFF0000, 7); }
-    #[test] #[should_panic] fn test_panics_4() { align_up(0xFFFF0000, 456); }
+    #[test]
+    #[should_panic]
+    fn test_panics_1() {
+        align_down(0xFFFF0000, 7);
+    }
+    #[test]
+    #[should_panic]
+    fn test_panics_2() {
+        align_down(0xFFFF0000, 123);
+    }
+    #[test]
+    #[should_panic]
+    fn test_panics_3() {
+        align_up(0xFFFF0000, 7);
+    }
+    #[test]
+    #[should_panic]
+    fn test_panics_4() {
+        align_up(0xFFFF0000, 456);
+    }
 }
 
 #[path = ""]
 mod allocator {
-    #[allow(dead_code)] mod bump;
-    #[allow(dead_code)] mod bin;
+    #[allow(dead_code)]
+    mod bin;
+    #[allow(dead_code)]
+    mod bump;
 
     use alloc::allocator::{AllocErr, Layout};
     use alloc::raw_vec::RawVec;
@@ -97,29 +115,53 @@ mod allocator {
 
         // Check that we have allocations after 'start' and before 'end'.
         for &(ptr, ref layout) in &pointers {
-            assert!(ptr >= start, "allocated {:x} after start ({:x})", ptr, start);
-            assert!(ptr + layout.size() <= end,
-                "{:x} + {:x} exceeds the bounds of {:x}", ptr, layout.size(), end);
+            assert!(
+                ptr >= start,
+                "allocated {:x} after start ({:x})",
+                ptr,
+                start
+            );
+            assert!(
+                ptr + layout.size() <= end,
+                "{:x} + {:x} exceeds the bounds of {:x}",
+                ptr,
+                layout.size(),
+                end
+            );
         }
 
         // Check that we have non-overlapping allocations.
         pointers.sort_by_key(|&(ptr, _)| ptr);
         for window in pointers.windows(2) {
             let (&(ptr_a, ref layout_a), &(ptr_b, _)) = (&window[0], &window[1]);
-            assert!(ptr_b - ptr_a >= layout_a.size(),
-                "memory region {:x} - {:x} does not fit {}", ptr_a, ptr_b, layout_a.size());
+            assert!(
+                ptr_b - ptr_a >= layout_a.size(),
+                "memory region {:x} - {:x} does not fit {}",
+                ptr_a,
+                ptr_b,
+                layout_a.size()
+            );
         }
 
         // Check alignment.
         for &(ptr, ref layout) in &pointers {
-            assert!(ptr % layout.align() == 0,
-                "{:x} is not aligned to {}", ptr, layout.align());
+            assert!(
+                ptr % layout.align() == 0,
+                "{:x} is not aligned to {}",
+                ptr,
+                layout.align()
+            );
         }
     }
 
     test_allocators!(bin_exhausted, bump_exhausted, 128, |(_, _, mut a)| {
         let e = a.alloc(layout!(1024, 128)).unwrap_err();
-        assert_eq!(e, AllocErr::Exhausted { request: layout!(1024, 128) })
+        assert_eq!(
+            e,
+            AllocErr::Exhausted {
+                request: layout!(1024, 128)
+            }
+        )
     });
 
     test_allocators!(bin_alloc, bump_alloc, 8 * (1 << 20), |(start, end, a)| {
@@ -148,7 +190,11 @@ mod allocator {
         test_layouts!(layouts, start, end, a);
     });
 
-    test_allocators!(bin_alloc_2, bump_alloc_2, 16 * (1 << 20), |(start, end, a)| {
+    test_allocators!(bin_alloc_2, bump_alloc_2, 16 * (1 << 20), |(
+        start,
+        end,
+        a,
+    )| {
         let mut layouts = vec![];
         for i in 1..1024 {
             layouts.push(layout!(i * 8, 16));
@@ -159,15 +205,13 @@ mod allocator {
     });
 
     fn scribble(ptr: *mut u8, size: usize) {
-        unsafe { ::std::ptr::write_bytes(ptr, 0xAF, size); }
+        unsafe {
+            ::std::ptr::write_bytes(ptr, 0xAF, size);
+        }
     }
 
     test_allocators!(bin_dealloc_s, bump_dealloc_s, 4096, |(_, _, mut a)| {
-        let layouts = [
-            layout!(16, 16),
-            layout!(16, 128),
-            layout!(16, 256),
-        ];
+        let layouts = [layout!(16, 16), layout!(16, 128), layout!(16, 256)];
 
         let mut pointers: Vec<(usize, Layout)> = vec![];
         for layout in &layouts {

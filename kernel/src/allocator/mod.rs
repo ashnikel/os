@@ -7,8 +7,8 @@ mod imp;
 #[cfg(test)]
 mod tests;
 
-use mutex::Mutex;
 use alloc::heap::{Alloc, AllocErr, Layout};
+use mutex::Mutex;
 // use std::cmp::max;
 
 /// Thread-safe (locking) wrapper around a particular memory allocator.
@@ -57,7 +57,11 @@ unsafe impl<'a> Alloc for &'a Allocator {
     /// (`AllocError::Exhausted`) or `layout` does not meet this allocator's
     /// size or alignment constraints (`AllocError::Unsupported`).
     unsafe fn alloc(&mut self, layout: Layout) -> Result<*mut u8, AllocErr> {
-        self.0.lock().as_mut().expect("allocator uninitialized").alloc(layout)
+        self.0
+            .lock()
+            .as_mut()
+            .expect("allocator uninitialized")
+            .alloc(layout)
     }
 
     /// Deallocates the memory referenced by `ptr`.
@@ -74,7 +78,11 @@ unsafe impl<'a> Alloc for &'a Allocator {
     /// Parameters not meeting these conditions may result in undefined
     /// behavior.
     unsafe fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {
-        self.0.lock().as_mut().expect("allocator uninitialized").dealloc(ptr, layout);
+        self.0
+            .lock()
+            .as_mut()
+            .expect("allocator uninitialized")
+            .dealloc(ptr, layout);
     }
 }
 

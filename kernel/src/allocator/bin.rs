@@ -1,10 +1,10 @@
-use std::fmt;
 use alloc::heap::{AllocErr, Layout};
+use std::fmt;
 
-use allocator::util::*;
 use allocator::linked_list::LinkedList;
+use allocator::util::*;
 
-use std::cmp::{min, max};
+use std::cmp::{max, min};
 
 const BIN_MIN: usize = 3;
 const BIN_MAX: usize = 29; // 2^29=512M
@@ -38,10 +38,7 @@ impl Allocator {
                 None => break,
             }
         }
-        Allocator {
-            bins,
-            start,
-        }
+        Allocator { bins, start }
     }
 
     fn max_bin_fits_in_size(size: usize) -> Option<usize> {
@@ -87,8 +84,10 @@ impl Allocator {
         }
 
         // guarantee that layout can be aligned in bin
-        let size = align_up(layout.size().next_power_of_two(),
-                            max(layout.align(), bin_size(BIN_MIN)));
+        let size = align_up(
+            layout.size().next_power_of_two(),
+            max(layout.align(), bin_size(BIN_MIN)),
+        );
 
         let fit_bin = size.trailing_zeros() as usize;
 
@@ -104,7 +103,7 @@ impl Allocator {
         }
 
         // fitting bin not available, we nead to split larger bin
-        for bin in fit_bin+1..BIN_MAX {
+        for bin in fit_bin + 1..BIN_MAX {
             if !self.bins[bin].is_empty() {
                 // bin can be split
                 let mut bin_to_split = bin;
@@ -138,7 +137,7 @@ impl Allocator {
     }
 
     fn merge_if_buddy_is_empty(&mut self, bin: usize, bin_addr: usize) -> Option<usize> {
-        let buddy_addr = if ((bin_addr - self.start)/ bin_size(bin)) % 2 == 0 {
+        let buddy_addr = if ((bin_addr - self.start) / bin_size(bin)) % 2 == 0 {
             // Left bin. Check buddy to the right
             bin_addr + bin_size(bin)
         } else {
@@ -177,8 +176,10 @@ impl Allocator {
     /// Parameters not meeting these conditions may result in undefined
     /// behavior.
     pub fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {
-        let size = align_up(layout.size().next_power_of_two(),
-                            max(layout.align(), bin_size(BIN_MIN)));
+        let size = align_up(
+            layout.size().next_power_of_two(),
+            max(layout.align(), bin_size(BIN_MIN)),
+        );
 
         let fit_bin = size.trailing_zeros() as usize;
 

@@ -1,13 +1,13 @@
 use std::fmt;
 use std::ptr::Unique;
 
-use ALLOCATOR;
 use alloc::allocator::{Alloc, Layout};
 use vm::PhysicalAddr;
+use ALLOCATOR;
 
 /// A process stack. The default size is 1M1B with an alignment of 16 bytes.
 pub struct Stack {
-    ptr: Unique<[u8; Stack::SIZE]>
+    ptr: Unique<[u8; Stack::SIZE]>,
 }
 
 impl Stack {
@@ -54,9 +54,7 @@ impl Stack {
 
 impl Drop for Stack {
     fn drop(&mut self) {
-        unsafe {
-            (&ALLOCATOR).dealloc(self.as_mut_ptr(), Self::layout())
-        }
+        unsafe { (&ALLOCATOR).dealloc(self.as_mut_ptr(), Self::layout()) }
     }
 }
 

@@ -14,33 +14,32 @@
 #![feature(naked_functions)]
 #![feature(fn_must_use)]
 #![feature(alloc, allocator_api, global_allocator)]
-//????? #![feature(pointer_methods)]
 
 #[macro_use]
 #[allow(unused_imports)]
 extern crate alloc;
+extern crate fat32;
 extern crate pi;
 extern crate stack_vec;
-extern crate fat32;
 
+pub mod aarch64;
 pub mod allocator;
+pub mod console;
+pub mod fs;
 pub mod lang_items;
 pub mod mutex;
-pub mod console;
-pub mod shell;
-pub mod fs;
-pub mod traps;
-pub mod aarch64;
 pub mod process;
+pub mod shell;
+pub mod traps;
 pub mod vm;
 
 #[cfg(not(test))]
 use allocator::Allocator;
-use console::kprint;////
-use console::kprintln;/////
-use fat32::traits::BlockDevice;/////
+use console::kprint;
+use console::kprintln;
+use fat32::traits::BlockDevice;
+use fs::sd::Sd;
 use fs::FileSystem;
-use fs::sd::Sd;/////
 use process::GlobalScheduler;
 
 #[cfg(not(test))]

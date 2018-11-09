@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use mutex::Mutex;
-use process::{Process, State, Id};
+use process::{Id, Process, State};
 use traps::TrapFrame;
 
 /// The `tick` time.
@@ -21,7 +21,11 @@ impl GlobalScheduler {
     /// Adds a process to the scheduler's queue and returns that process's ID.
     /// For more details, see the documentation on `Scheduler::add()`.
     pub fn add(&self, process: Process) -> Option<Id> {
-        self.0.lock().as_mut().expect("scheduler uninitialized").add(process)
+        self.0
+            .lock()
+            .as_mut()
+            .expect("scheduler uninitialized")
+            .add(process)
     }
 
     /// Performs a context switch using `tf` by setting the state of the current
@@ -30,7 +34,11 @@ impl GlobalScheduler {
     /// the documentation on `Scheduler::switch()`.
     #[must_use]
     pub fn switch(&self, new_state: State, tf: &mut TrapFrame) -> Option<Id> {
-        self.0.lock().as_mut().expect("scheduler uninitialized").switch(new_state, tf)
+        self.0
+            .lock()
+            .as_mut()
+            .expect("scheduler uninitialized")
+            .switch(new_state, tf)
     }
 
     /// Initializes the scheduler and starts executing processes in user space

@@ -48,7 +48,7 @@ macro_rules! impl_for {
                 write!(f, "{}({:#x})", stringify!($T), self.0)
             }
         }
-    }
+    };
 }
 
 impl_for!(VirtualAddr);

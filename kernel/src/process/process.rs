@@ -1,5 +1,5 @@
+use process::{Stack, State};
 use traps::TrapFrame;
-use process::{State, Stack};
 
 /// Type alias for the type of a process ID.
 pub type Id = u64;
