@@ -73,21 +73,17 @@ pub fn cmd_cat(args: &[&str], cwd: &PathBuf) {
         let mut dir = cwd.clone();
         dir.push(arg);
         if let Ok(mut file) = FILE_SYSTEM.open_file(&dir) {
-            loop {
-                let mut buf = [0u8; 512];
-                match file.read(&mut buf) {
-                    Ok(0) => break,
-                    Ok(_) => match str::from_utf8(&buf) {
-                        Ok(s) => kprint!("{}", s),
-                        Err(e) => {
-                            kprint!("UTF-8 error: {}", e);
-                            break;
-                        }
-                    },
+            let mut buf = Vec::with_capacity(file.size() as usize);
+            match file.read_to_end(&mut buf) {
+                Ok(0) => break,
+                Ok(_) => match str::from_utf8(&buf) {
+                    Ok(s) => kprint!("{}", s),
                     Err(e) => {
-                        kprint!("failed to read: {:?}", e);
-                        break;
+                        kprint!("UTF-8 error: {}", e);
                     }
+                },
+                Err(e) => {
+                    kprint!("failed to read: {:?}", e);
                 }
             }
         } else {
