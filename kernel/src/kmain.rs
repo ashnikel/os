@@ -110,5 +110,9 @@ pub extern "C" fn kmain() {
     // check_mbr();
 
     kprintln!("Well, hello...");
+    unsafe {
+        let el = aarch64::current_el();
+        kprintln!("Current Exception Level is EL{}", el);
+    }
     shell::shell("> ");
 }
