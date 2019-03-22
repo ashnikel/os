@@ -3,6 +3,8 @@
 #define EL2 0b10
 #define EL3 0b11
 
+#define lr x30
+
 .section .text.init
 
 .global _start
@@ -76,6 +78,8 @@ switch_to_el1:
 
     // set up exception handlers
     // FIXME: load `_vectors` addr into appropriate register (guide: 10.4)
+    adr x2, _vectors
+    msr VBAR_EL1, x2
 
     // change execution level to EL1 (ref: C5.2.19)
     mov     x2, #0x3c5
@@ -108,6 +112,13 @@ go_kmain:
 
 context_save:
     // FIXME: Save the remaining context to the stack.
+    stp lr, x0, [SP, #-16]!
+    stp x1, x2, [SP, #-16]!
+
+    mrs x1, ESR_EL1
+    mov x2, #0
+
+    bl handle_exception
 
 .global context_restore
 context_restore:
@@ -127,3 +138,19 @@ context_restore:
 .align 11
 _vectors:
     // FIXME: Setup the 16 exception vectors.
+    HANDLER(0, 0)
+    HANDLER(0, 1)
+    HANDLER(0, 2)
+    HANDLER(0, 3)
+    HANDLER(1, 0)
+    HANDLER(1, 1)
+    HANDLER(1, 2)
+    HANDLER(1, 3)
+    HANDLER(2, 0)
+    HANDLER(2, 1)
+    HANDLER(2, 2)
+    HANDLER(2, 3)
+    HANDLER(3, 0)
+    HANDLER(3, 1)
+    HANDLER(3, 2)
+    HANDLER(3, 3)
