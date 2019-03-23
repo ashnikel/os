@@ -115,5 +115,7 @@ pub extern "C" fn kmain() {
         kprintln!("Current Exception Level is EL{}", el);
     }
     unsafe { asm!("brk 2" :::: "volatile"); }
-    shell::shell("> ");
+    loop {
+        shell::shell("> ");
+    }
 }

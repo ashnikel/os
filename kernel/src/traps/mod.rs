@@ -7,11 +7,12 @@ use pi::interrupt::{Controller, Interrupt};
 
 pub use self::trap_frame::TrapFrame;
 
-use aarch64;
 use self::irq::handle_irq;
 use self::syndrome::Syndrome;
 use self::syscall::handle_syscall;
+use aarch64;
 use console::kprintln;
+use shell;
 
 #[repr(u16)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -44,8 +45,20 @@ pub struct Info {
 /// the trap frame for the exception.
 #[no_mangle]
 pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
-    kprintln!("Info: {:#?}", info);
-    kprintln!("ESR: {}", esr);
+    kprintln!("Exception: {:#?}", info);
+    if info.kind == Kind::Synchronous {
+        kprintln!("Syndrome: {:#?}", Syndrome::from(esr));
+    }
+
+    if info.kind == Kind::Synchronous {
+        let syndrome = Syndrome::from(esr);
+        match syndrome {
+            Syndrome::Brk(n) => {
+                shell::shell("brk> ");
+            }
+            _ => (),
+        }
+    }
 
     loop {
         unsafe { aarch64::nop() }

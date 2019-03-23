@@ -273,7 +273,7 @@ const BOOTLOADER_START_ADDR: usize = 0x4000000;
 const BOOTLOADER_START: *mut u8 = BOOTLOADER_START_ADDR as *mut u8;
 /// Starts a shell using `prefix` as the prefix for each line. This function
 /// never returns: it is perpetually in a shell loop.
-pub fn shell(prefix: &str) -> ! {
+pub fn shell(prefix: &str) {
     let mut cwd = PathBuf::from("/");
 
     loop {
@@ -282,6 +282,10 @@ pub fn shell(prefix: &str) -> ! {
         let line_vec = StackVec::new(&mut buf);
         let line = read_line(line_vec);
         match Command::parse(line, &mut [""; MAXARGS]) {
+            Ok(ref cmd) if cmd.args[0] == "exit" => {
+                kprintln!("Exiting shell");
+                return;
+            }
             Ok(cmd) => {
                 cmd.exec(&mut cwd);
             }
