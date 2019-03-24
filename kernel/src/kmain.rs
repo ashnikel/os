@@ -114,7 +114,9 @@ pub extern "C" fn kmain() {
         let el = aarch64::current_el();
         kprintln!("Current Exception Level is EL{}", el);
     }
-    unsafe { asm!("brk 2" :::: "volatile"); }
+    unsafe {
+        asm!("brk 2" :::: "volatile");
+    }
     loop {
         shell::shell("> ");
     }
