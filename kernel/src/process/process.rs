@@ -22,7 +22,13 @@ impl Process {
     /// If enough memory could not be allocated to start the process, returns
     /// `None`. Otherwise returns `Some` of the new `Process`.
     pub fn new() -> Option<Process> {
-        unimplemented!("Process::new()")
+        let stack = Stack::new()?;
+
+        Some(Process {
+            trap_frame: Box::new(TrapFrame::default()),
+            stack,
+            state: State::Ready,
+        })
     }
 
     /// Returns `true` if this process is ready to be scheduled.
