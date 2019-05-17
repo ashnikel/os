@@ -100,24 +100,7 @@ pub fn check_root_dir() {
 pub extern "C" fn kmain() {
     pi::timer::spin_sleep_ms(1000);
 
-    // print_atags();
-
     ALLOCATOR.initialize();
     FILE_SYSTEM.initialize();
-
-    // check_root_dir();
-    // check_alloc();
-    // check_mbr();
-
-    kprintln!("Well, hello...");
-    unsafe {
-        let el = aarch64::current_el();
-        kprintln!("Current Exception Level is EL{}", el);
-    }
-    unsafe {
-        asm!("brk 2" :::: "volatile");
-    }
-    loop {
-        shell::shell("> ");
-    }
+    SCHEDULER.start();
 }

@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 
 use mutex::Mutex;
 use process::{Id, Process, State};
+use shell;
 use traps::TrapFrame;
 
 /// The `tick` time.
@@ -45,7 +46,23 @@ impl GlobalScheduler {
     /// using timer interrupt based preemptive scheduling. This method should
     /// not return under normal conditions.
     pub fn start(&self) {
-        unimplemented!("GlobalScheduler::start()")
+        let mut process = Process::new().unwrap();
+        process.trap_frame.elr = run_shell as u64;
+        process.trap_frame.sp = process.stack.top().as_u64();
+        process.trap_frame.spsr = 0;
+        let tf = &*process.trap_frame;
+
+        unsafe {
+            asm!("mov sp, $0
+                  bl context_restore
+                  adr x0, _start
+                  mov sp, x0
+                  mov x0, xzr
+                  mov lr, xzr
+                  eret"
+                :: "r"(tf)
+                :: "volatile");
+        }
     }
 }
 
@@ -84,5 +101,21 @@ impl Scheduler {
     /// energy as much as possible in the interim.
     fn switch(&mut self, new_state: State, tf: &mut TrapFrame) -> Option<Id> {
         unimplemented!("Scheduler::switch()")
+    }
+}
+
+extern "C" fn run_shell() {
+    unsafe {
+        asm!("brk 1" :::: "volatile");
+    }
+    unsafe {
+        asm!("brk 2" :::: "volatile");
+    }
+    shell::shell("user0> ");
+    unsafe {
+        asm!("brk 3" :::: "volatile");
+    }
+    loop {
+        shell::shell("user1> ");
     }
 }
