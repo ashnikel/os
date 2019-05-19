@@ -59,5 +59,22 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
             }
             _ => (),
         }
+    } else if info.kind == Kind::Irq {
+        let controller = Controller::new();
+        let ints = [
+            Interrupt::Timer1,
+            Interrupt::Timer3,
+            Interrupt::Usb,
+            Interrupt::Gpio0,
+            Interrupt::Gpio1,
+            Interrupt::Gpio2,
+            Interrupt::Gpio3,
+            Interrupt::Uart,
+        ];
+        for int in ints.iter() {
+            if controller.is_pending(*int) {
+                handle_irq(*int, tf);
+            }
+        }
     }
 }

@@ -5,6 +5,9 @@ use process::{Id, Process, State};
 use shell;
 use traps::TrapFrame;
 
+use pi::interrupt::{Controller, Interrupt};
+use pi::timer::tick_in;
+
 /// The `tick` time.
 // FIXME: When you're ready, change this to something more reasonable.
 pub const TICK: u32 = 2 * 1000 * 1000;
@@ -51,6 +54,11 @@ impl GlobalScheduler {
         process.trap_frame.sp = process.stack.top().as_u64();
         process.trap_frame.spsr = 0;
         let tf = &*process.trap_frame;
+
+        let mut controller = Controller::new();
+        controller.enable(Interrupt::Timer1);
+
+        tick_in(TICK);
 
         unsafe {
             asm!("mov sp, $0
@@ -105,16 +113,16 @@ impl Scheduler {
 }
 
 extern "C" fn run_shell() {
-    unsafe {
-        asm!("brk 1" :::: "volatile");
-    }
-    unsafe {
-        asm!("brk 2" :::: "volatile");
-    }
-    shell::shell("user0> ");
-    unsafe {
-        asm!("brk 3" :::: "volatile");
-    }
+    // unsafe {
+    //     asm!("brk 1" :::: "volatile");
+    // }
+    // unsafe {
+    //     asm!("brk 2" :::: "volatile");
+    // }
+    // shell::shell("user0> ");
+    // unsafe {
+    //     asm!("brk 3" :::: "volatile");
+    // }
     loop {
         shell::shell("user1> ");
     }
